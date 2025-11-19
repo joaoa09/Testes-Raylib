@@ -9,7 +9,7 @@
             "args": [
                 "-o",
                 "build/meujogo.exe",
-                "src/teste.c",
+                "src/menu.c",
                 "-I", "C:/raylib/raylib/include",
                 "-L", "C:/raylib/raylib/lib",
                 "-lraylib",
