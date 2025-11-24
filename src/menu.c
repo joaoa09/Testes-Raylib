@@ -232,8 +232,8 @@ int main(void) {
                 BeginDrawing();
                 ClearBackground(GREEN);
                 DrawText("CRÉDITOS", 280, 200, 60, WHITE);
-                DrawText("Feito por João e o Inner AI", 220, 300, 30, WHITE);
-                DrawText("Pressione X para voltar", 250, 450, 30, WHITE);
+                DrawText("Feito por: \nJoão Augusto;\nCauan Felipe;\nVinícius Oliveira;\nLuis Henrique;\nVinicus", 280, 270, 30, WHITE);
+                DrawText("Pressione X para voltar", 200, 500, 30, WHITE);
                 EndDrawing();
                 if (IsKeyPressed(KEY_X)) {
                     PlaySound(fxSelect);

@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <time.h> 
+#include <time.h>
 #include <stdio.h> // Para logs de debug
 
 // Enum para telas (Compartilhado com menu.c)
@@ -29,12 +29,12 @@ typedef enum {
 } GameScreen;
 
 // Dimensões de Design
-#define DESIGN_LARGURA_ECRA 1920 
-#define DESIGN_ALTURA_ECRA 1080  
+#define DESIGN_LARGURA_ECRA 1920
+#define DESIGN_ALTURA_ECRA 1080
 
 // Balanceamento
 #define SANIDADE_MAX_JOGADOR 5000
-#define QUESTOES_TOTAIS 0 
+#define QUESTOES_TOTAIS 0
 #define ESTUDOS_POR_QUESTAO 3
 #define TEMPO_TURNO_INIMIGO 10.0f
 #define MAX_PROJETEIS 500
@@ -45,17 +45,14 @@ typedef enum { TURNO_JOGADOR, MENU_AGIR, EXIBINDO_TEXTO, TURNO_INIMIGO, GAME_OVE
 
 // Estruturas
 typedef struct { Vector2 position; int sanidade; float temporizadorInvencibilidade; float dashCooldown; bool acabouDeDarDash; } Aluno;
-
 typedef enum {
     PADRAO_NULO, RAJADA_RAPIDA, ATAQUE_LETRA_C, ESPIRAL_PULSANTE, CHUVA_ESTELAR_ANGULAR,
     ATAQUE_LANCA, COMBO_CAOTICO, VARREDURA_LASER, ATAQUE_FINAL
 } PadraoAtaque;
-
 typedef struct {
     Rectangle rect; float rotation; float timer; int stage;
     Vector2 blasterPos;
 } Laser;
-
 typedef struct {
     Rectangle corpoVisual; int estudosFeitos; int questoesResolvidas; bool podeResolverQuestao; bool podeEntregarProva; bool turnoFinalAtivo; int turnosTotaisPassados;
     PadraoAtaque padraoAtual; float temporizadorTurno; float delayInicialTimer; float anguloEspiral; float temporizadorSubAtaque;
@@ -63,9 +60,7 @@ typedef struct {
     Vector2 posLetraC; float rotacaoLetraC;
     Laser lasers[MAX_LASERS];
 } Professor;
-
 typedef enum { PROJETIL_NORMAL, ESTRELA_MAE, FRAGMENTO_ESTELAR, LANCA_AVISO, LANCA_PROJETIL, PROJETIL_RICOCHETE } TipoProjetil;
-
 typedef struct { Vector2 position; Vector2 speed; float radius; float lifeTimer; int ricochetes; bool active; Color color; TipoProjetil type; } Projetil;
 
 // Variáveis Estáticas do Jogo
@@ -87,7 +82,9 @@ static Sound fxShoot;
 static Sound fxLaserCharge;
 static Sound fxLaserFire;
 static Sound fxMenuSelectGame;
+static Sound fxDamage; // [NOVO] Variável para o som de dano
 static Texture2D texturaProfessor;
+static Music musicBackground;
 
 // ==================== PROTÓTIPOS DE FUNÇÕES ====================
 static void IniciarJogoInterno(void);
@@ -97,7 +94,7 @@ static void AtualizarTurnoJogadorInterna(void);
 static void AtualizarMenuAgirInterna(void);
 static void AtualizarExibindoTextoInterna(void);
 static void AtualizarTurnoInimigoInterna(void);
-static void DesenharJogoInterno(void); 
+static void DesenharJogoInterno(void);
 static void DesenharInterfaceInterna(void);
 static void DesenharTurnoJogadorInterna(void);
 static void DesenharMenuAgirInterna(void);
@@ -113,38 +110,62 @@ static Sound CarregarSomSeguro(const char* nomeArquivo) {
     // Tentativa 1: ../resources/ (Executável na pasta build)
     const char* path1 = TextFormat("../resources/%s", nomeArquivo);
     if (FileExists(path1)) s = LoadSound(path1);
-    
     // Tentativa 2: resources/ (Executando da raiz/VSCode)
     if (s.frameCount == 0) {
         const char* path2 = TextFormat("resources/%s", nomeArquivo);
         if (FileExists(path2)) s = LoadSound(path2);
     }
-
     if (s.frameCount > 0) TraceLog(LOG_INFO, "AUDIO SUCESSO: %s", nomeArquivo);
-    else TraceLog(LOG_ERROR, "AUDIO FALHOU: %s nao encontrado!", nomeArquivo);
-    
+    else TraceLog(LOG_ERROR, "AUDIO FALHOU: %s nao encontrado ou formato invalido!", nomeArquivo);
     return s;
+}
+
+// --- HELPER: CARREGAMENTO SEGURO DE MÚSICA ---
+static Music CarregarMusicaSegura(const char* nomeArquivo) {
+    Music m = { 0 };
+    const char* path1 = TextFormat("../resources/%s", nomeArquivo);
+    if (FileExists(path1)) m = LoadMusicStream(path1);
+    if (m.frameCount == 0) {
+        const char* path2 = TextFormat("resources/%s", nomeArquivo);
+        if (FileExists(path2)) m = LoadMusicStream(path2);
+    }
+    if (m.frameCount > 0) TraceLog(LOG_INFO, "MUSICA SUCESSO: %s", nomeArquivo);
+    else TraceLog(LOG_ERROR, "MUSICA FALHOU: %s nao encontrado ou formato invalido!", nomeArquivo);
+    return m;
 }
 
 // ==================== FUNÇÃO PRINCIPAL (CHAMADA PELO MENU) ====================
 void RunUndertaleGame(GameScreen *currentScreen) {
+    TraceLog(LOG_INFO, "DEBUG: RunUndertaleGame iniciada.");
     SetTargetFPS(60);
-    SetRandomSeed(time(NULL)); 
+    SetRandomSeed(time(NULL));
 
     // --- GARANTIA DE ÁUDIO ---
     if (!IsAudioDeviceReady()) InitAudioDevice();
     SetMasterVolume(1.0f); // Volume máximo
 
+    TraceLog(LOG_INFO, "DEBUG: Tentando carregar sons...");
     // Carregamento de Sons
     fxHit = CarregarSomSeguro("hit.wav");
     fxShoot = CarregarSomSeguro("shoot.wav");
     fxLaserCharge = CarregarSomSeguro("laser_charge.wav");
     fxLaserFire = CarregarSomSeguro("laser_fire.wav");
     fxMenuSelectGame = CarregarSomSeguro("select.wav");
+    fxDamage = CarregarSomSeguro("damage_sound.wav"); // [NOVO] Carrega o som de dano
+    TraceLog(LOG_INFO, "DEBUG: Carregamento de sons concluído (ou tentado).");
+
+    // Carregamento da Música de Fundo
+    musicBackground = CarregarMusicaSegura("Megalovania.mp3");
+    if (musicBackground.frameCount > 0) {
+        PlayMusicStream(musicBackground);
+        SetMusicVolume(musicBackground, 0.7f);
+    }
 
     // Carregamento de Imagem (Com fallback)
     texturaProfessor = LoadTexture("../resources/professor.png");
     if (texturaProfessor.id == 0) texturaProfessor = LoadTexture("resources/professor.png");
+    if (texturaProfessor.id == 0) TraceLog(LOG_ERROR, "IMAGEM FALHOU: professor.png nao encontrado!");
+    else TraceLog(LOG_INFO, "IMAGEM SUCESSO: professor.png carregada.");
 
     // Resetar estado do jogo
     IniciarJogoInterno();
@@ -154,18 +175,23 @@ void RunUndertaleGame(GameScreen *currentScreen) {
         // Segurança extra: se o áudio cair, tenta religar
         if (!IsAudioDeviceReady()) InitAudioDevice();
 
+        // Atualiza o stream da música
+        UpdateMusicStream(musicBackground);
+
         AtualizarJogoInterno();
         DesenharJogoInterno();
 
         // Condição de Saída (Vitória/Derrota)
         if (estadoAtualInterno == GAME_OVER || estadoAtualInterno == VITORIA) {
             if (IsKeyPressed(KEY_Z)) {
-                PlaySound(fxMenuSelectGame); 
+                PlaySound(fxMenuSelectGame);
                 *currentScreen = SCREEN_MENU;
-                
                 // Limpeza
-                UnloadSound(fxHit); UnloadSound(fxShoot); UnloadSound(fxLaserCharge); 
-                UnloadSound(fxLaserFire); UnloadSound(fxMenuSelectGame); UnloadTexture(texturaProfessor);
+                UnloadSound(fxHit); UnloadSound(fxShoot); UnloadSound(fxLaserCharge);
+                UnloadSound(fxLaserFire); UnloadSound(fxMenuSelectGame); UnloadSound(fxDamage); // [NOVO] Descarrega o som de dano
+                UnloadTexture(texturaProfessor);
+                // Descarrega a música
+                UnloadMusicStream(musicBackground);
                 return;
             }
         }
@@ -174,40 +200,36 @@ void RunUndertaleGame(GameScreen *currentScreen) {
     // Se fechar a janela pelo X
     if (WindowShouldClose()) {
         *currentScreen = SCREEN_EXIT;
-        UnloadSound(fxHit); UnloadSound(fxShoot); UnloadSound(fxLaserCharge); 
-        UnloadSound(fxLaserFire); UnloadSound(fxMenuSelectGame); UnloadTexture(texturaProfessor);
+        UnloadSound(fxHit); UnloadSound(fxShoot); UnloadSound(fxLaserCharge);
+        UnloadSound(fxLaserFire); UnloadSound(fxMenuSelectGame); UnloadSound(fxDamage); // [NOVO] Descarrega o som de dano
+        UnloadTexture(texturaProfessor);
+        // Descarrega a música
+        UnloadMusicStream(musicBackground);
     }
 }
 
 static void IniciarJogoInterno(void) {
     estadoAtualInterno=EXIBINDO_TEXTO; acaoTerminaTurno=false; menuSel=0; menuAgirSel=0;
     strcpy(textoDialogo, "* Professor ACM encara voce. A prova final definira seu futuro.");
-
     float currentScreenWidth = (float)GetScreenWidth();
     float currentScreenHeight = (float)GetScreenHeight();
     float scaleX = currentScreenWidth / DESIGN_LARGURA_ECRA;
     float scaleY = currentScreenHeight / DESIGN_ALTURA_ECRA;
-
     caixaBatalha=(Rectangle){currentScreenWidth/2.0f - (800.0f * scaleX)/2.0f, 320.0f * scaleY, 800.0f * scaleX, 400.0f * scaleY};
     caixaInterfaceInferior=(Rectangle){currentScreenWidth/2.0f - (1520.0f * scaleX)/2.0f, 750.0f * scaleY, 1520.0f * scaleX, 300.0f * scaleY};
-
     aluno=(Aluno){(Vector2){caixaBatalha.x+caixaBatalha.width/2.0f,caixaBatalha.y+caixaBatalha.height/2.0f},SANIDADE_MAX_JOGADOR,0,0,false};
     acm=(Professor){(Rectangle){currentScreenWidth/2.0f - (100.0f * scaleX), 100.0f * scaleY, 200.0f * scaleX, 200.0f * scaleY},0,0,false,false,false,0,PADRAO_NULO,TEMPO_TURNO_INIMIGO,0,0,0,0,0,(Vector2){-1000,-1000},0};
-
     float btnW = 220.0f * scaleX; float btnH = 70.0f * scaleY; float sp = 40.0f * scaleX;
     float paddingX = 40.0f * scaleX; float paddingY = (caixaInterfaceInferior.height - (btnH*2+sp))/2;
     float sX = caixaInterfaceInferior.x + caixaInterfaceInferior.width - (btnW*2+sp) - paddingX;
     float sY = caixaInterfaceInferior.y + paddingY;
-
     botoesMenu[0]=(Rectangle){sX,sY,btnW,btnH};
     botoesMenu[1]=(Rectangle){sX+btnW+sp,sY,btnW,btnH};
     botoesMenu[2]=(Rectangle){sX,sY+btnH+sp,btnW,btnH};
     botoesMenu[3]=(Rectangle){sX+btnW+sp,sY+btnH+sp,btnW,btnH};
-
     for(int i=0; i<MAX_PROJETEIS; i++) projeteis[i].active = false;
     for(int i=0; i<MAX_LASERS; i++) acm.lasers[i] = (Laser){0};
 }
-
 static void MudarParaTurnoInimigoInterno(void) {
     estadoAtualInterno = TURNO_INIMIGO;
     acm.temporizadorTurno = TEMPO_TURNO_INIMIGO;
@@ -216,7 +238,6 @@ static void MudarParaTurnoInimigoInterno(void) {
     acm.estagioAtaque = 0; acm.contadorAtaque = 0;
     for(int i=0; i<MAX_PROJETEIS; i++) projeteis[i].active = false;
     for(int i=0; i<MAX_LASERS; i++) acm.lasers[i] = (Laser){0};
-    
     int r = rand()%100;
     if(acm.turnoFinalAtivo) acm.padraoAtual = ATAQUE_FINAL;
     else if(r<20) acm.padraoAtual = RAJADA_RAPIDA;
@@ -226,7 +247,6 @@ static void MudarParaTurnoInimigoInterno(void) {
     else if(r<90) acm.padraoAtual = ATAQUE_LANCA;
     else acm.padraoAtual = COMBO_CAOTICO;
 }
-
 static void AtualizarJogoInterno(void) {
     switch (estadoAtualInterno) {
         case TURNO_JOGADOR: AtualizarTurnoJogadorInterna(); break;
@@ -237,15 +257,15 @@ static void AtualizarJogoInterno(void) {
         case VITORIA: break;
     }
 }
-
 static void AtualizarTurnoJogadorInterna(void) {
-    if (IsKeyPressed(KEY_RIGHT) && (menuSel == 0 || menuSel == 2)) { menuSel++; PlaySound(fxMenuSelectGame); }
-    if (IsKeyPressed(KEY_LEFT) && (menuSel == 1 || menuSel == 3)) { menuSel--; PlaySound(fxMenuSelectGame); }
-    if (IsKeyPressed(KEY_DOWN) && (menuSel == 0 || menuSel == 1)) { menuSel += 2; PlaySound(fxMenuSelectGame); }
-    if (IsKeyPressed(KEY_UP) && (menuSel == 2 || menuSel == 3)) { menuSel -= 2; PlaySound(fxMenuSelectGame); }
+    // [MODIFICADO] Removidas chamadas de PlaySound(fxMenuSelectGame) ao mover a seleção
+    if (IsKeyPressed(KEY_RIGHT) && (menuSel == 0 || menuSel == 2)) { menuSel++; }
+    if (IsKeyPressed(KEY_LEFT) && (menuSel == 1 || menuSel == 3)) { menuSel--; }
+    if (IsKeyPressed(KEY_DOWN) && (menuSel == 0 || menuSel == 1)) { menuSel += 2; }
+    if (IsKeyPressed(KEY_UP) && (menuSel == 2 || menuSel == 3)) { menuSel -= 2; }
 
     if (IsKeyPressed(KEY_Z)) {
-        PlaySound(fxMenuSelectGame);
+        PlaySound(fxMenuSelectGame); // [MANTIDO] Toca o som ao CONFIRMAR a seleção
         acaoTerminaTurno = false;
         estadoAtualInterno = EXIBINDO_TEXTO;
         switch (menuSel) {
@@ -267,14 +287,15 @@ static void AtualizarTurnoJogadorInterna(void) {
         }
     }
 }
-
 static void AtualizarMenuAgirInterna(void) {
-    if (IsKeyPressed(KEY_DOWN)) { menuAgirSel++; PlaySound(fxMenuSelectGame); }
-    if (IsKeyPressed(KEY_UP)) { menuAgirSel--; PlaySound(fxMenuSelectGame); }
+    // [MODIFICADO] Removidas chamadas de PlaySound(fxMenuSelectGame) ao mover a seleção
+    if (IsKeyPressed(KEY_DOWN)) { menuAgirSel++; }
+    if (IsKeyPressed(KEY_UP)) { menuAgirSel--; }
     if (menuAgirSel < 0) menuAgirSel = 2;
     if (menuAgirSel > 2) menuAgirSel = 0;
+
     if (IsKeyPressed(KEY_Z)) {
-        PlaySound(fxMenuSelectGame);
+        PlaySound(fxMenuSelectGame); // [MANTIDO] Toca o som ao CONFIRMAR a seleção
         acaoTerminaTurno = true;
         estadoAtualInterno = EXIBINDO_TEXTO;
         switch (menuAgirSel) {
@@ -311,25 +332,22 @@ static void AtualizarMenuAgirInterna(void) {
         }
     }
     if (IsKeyPressed(KEY_X)) {
-        PlaySound(fxMenuSelectGame);
+        PlaySound(fxMenuSelectGame); // [MANTIDO] Toca o som ao VOLTAR
         estadoAtualInterno = TURNO_JOGADOR;
     }
 }
-
 static void AtualizarExibindoTextoInterna(void) {
     if (IsKeyPressed(KEY_Z)) {
-        PlaySound(fxMenuSelectGame);
+        PlaySound(fxMenuSelectGame); // [MANTIDO] Toca o som ao AVANÇAR no texto
         if (acaoTerminaTurno) MudarParaTurnoInimigoInterno();
         else estadoAtualInterno = TURNO_JOGADOR;
     }
 }
-
 static void AtualizarTurnoInimigoInterna(void) {
     float currentScreenWidth = (float)GetScreenWidth();
     float currentScreenHeight = (float)GetScreenHeight();
     float scaleX = currentScreenWidth / DESIGN_LARGURA_ECRA;
     float scaleY = currentScreenHeight / DESIGN_ALTURA_ECRA;
-
     if (aluno.temporizadorInvencibilidade > 0) aluno.temporizadorInvencibilidade -= GetFrameTime();
     if (aluno.dashCooldown > 0) aluno.dashCooldown -= GetFrameTime();
     if (IsKeyPressed(KEY_LEFT_SHIFT) && aluno.dashCooldown <= 0) {
@@ -337,20 +355,16 @@ static void AtualizarTurnoInimigoInterna(void) {
         aluno.temporizadorInvencibilidade = 0.3f;
         aluno.dashCooldown = 1.0f;
     }
-    
     // --- VELOCIDADE AJUSTADA (600 pixels por segundo * escala) ---
-    float velAluno = 600.0f * scaleY * GetFrameTime(); 
-    
+    float velAluno = 600.0f * scaleY * GetFrameTime();
     if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) aluno.position.y -= velAluno;
     if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) aluno.position.y += velAluno;
     if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) aluno.position.x -= velAluno;
     if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) aluno.position.x += velAluno;
-    
     if (aluno.position.x < caixaBatalha.x) aluno.position.x = caixaBatalha.x;
     if (aluno.position.x > caixaBatalha.x + caixaBatalha.width) aluno.position.x = caixaBatalha.x + caixaBatalha.width;
     if (aluno.position.y < caixaBatalha.y) aluno.position.y = caixaBatalha.y;
     if (aluno.position.y > caixaBatalha.y + caixaBatalha.height) aluno.position.y = caixaBatalha.y + caixaBatalha.height;
-
     if (acm.delayInicialTimer > 0) {
         acm.delayInicialTimer -= GetFrameTime();
         if (acm.delayInicialTimer <= 0) acm.temporizadorTurno = TEMPO_TURNO_INIMIGO;
@@ -364,11 +378,9 @@ static void AtualizarTurnoInimigoInterna(void) {
         }
         float modVel = 1.0f + (float)acm.turnosTotaisPassados * 0.1f;
         ExecutarAtaqueChefe(modVel);
-
         for (int i=0; i<MAX_PROJETEIS; i++) if (projeteis[i].active) {
             projeteis[i].position.x += projeteis[i].speed.x * GetFrameTime();
             projeteis[i].position.y += projeteis[i].speed.y * GetFrameTime();
-            
             if (projeteis[i].lifeTimer > 0) {
                 projeteis[i].lifeTimer -= GetFrameTime();
                 if (projeteis[i].lifeTimer <= 0) {
@@ -376,7 +388,7 @@ static void AtualizarTurnoInimigoInterna(void) {
                     if (projeteis[i].type == ESTRELA_MAE) CriarExplosaoEstelar(projeteis[i].position, modVel);
                     if (projeteis[i].type == LANCA_AVISO) {
                         Vector2 vel = {0,0};
-                        float velLanca = 1200.0f * scaleY * modVel; 
+                        float velLanca = 1200.0f * scaleY * modVel;
                         if (projeteis[i].position.x < caixaBatalha.x) vel.x = velLanca;
                         else if (projeteis[i].position.x > caixaBatalha.x + caixaBatalha.width) vel.x = -velLanca;
                         else if (projeteis[i].position.y < caixaBatalha.y) vel.y = velLanca;
@@ -394,7 +406,7 @@ static void AtualizarTurnoInimigoInterna(void) {
             if (!CheckCollisionPointRec(projeteis[i].position, (Rectangle){-200 * scaleX, -200 * scaleY, currentScreenWidth + 400 * scaleX, currentScreenHeight + 400 * scaleY}) && (projeteis[i].type != PROJETIL_RICOCHETE || projeteis[i].ricochetes >= 2) ) { projeteis[i].active = false; }
             if (CheckCollisionCircles(aluno.position, 8.0f * scaleX, projeteis[i].position, projeteis[i].radius * scaleX) && aluno.temporizadorInvencibilidade <= 0) {
                 aluno.sanidade--; aluno.temporizadorInvencibilidade = 1.2f; aluno.acabouDeDarDash = false;
-                PlaySound(fxHit);
+                PlaySound(fxDamage); // [NOVO] Toca o som de dano
                 if (aluno.sanidade <= 0) { aluno.sanidade = 0; estadoAtualInterno = GAME_OVER; }
             }
         }
@@ -406,33 +418,29 @@ static void AtualizarTurnoInimigoInterna(void) {
             }
             if (acm.lasers[i].stage == 2 && CheckCollisionCircleRec(aluno.position, 8.0f * scaleX, acm.lasers[i].rect) && aluno.temporizadorInvencibilidade <= 0) {
                 aluno.sanidade--; aluno.temporizadorInvencibilidade = 1.2f; aluno.acabouDeDarDash = false;
-                PlaySound(fxHit);
+                PlaySound(fxDamage); // [NOVO] Toca o som de dano
                 if (aluno.sanidade <= 0) { aluno.sanidade = 0; estadoAtualInterno = GAME_OVER; }
             }
         }
     }
 }
-
 static void DesenharJogoInterno(void){
     float currentScreenWidth = (float)GetScreenWidth();
     float currentScreenHeight = (float)GetScreenHeight();
     float scaleX = currentScreenWidth / DESIGN_LARGURA_ECRA;
     float scaleY = currentScreenHeight / DESIGN_ALTURA_ECRA;
-
     BeginDrawing();
     ClearBackground(BLACK);
-    
     // Desenho da Imagem com Segurança
     if (texturaProfessor.id != 0) {
-        DrawTexturePro(texturaProfessor, 
-                    (Rectangle){0, 0, (float)texturaProfessor.width, (float)texturaProfessor.height}, 
-                    acm.corpoVisual, 
-                    (Vector2){0, 0}, 0.0f, WHITE);
+        DrawTexturePro(texturaProfessor,
+                       (Rectangle){0, 0, (float)texturaProfessor.width, (float)texturaProfessor.height},
+                       acm.corpoVisual,
+                       (Vector2){0, 0}, 0.0f, WHITE);
     } else {
         DrawRectangleRec(acm.corpoVisual, MAROON);
         DrawText("IMG?", (int)acm.corpoVisual.x + 20, (int)acm.corpoVisual.y + 20, 40, WHITE);
     }
-
     switch (estadoAtualInterno) {
         case TURNO_JOGADOR: case MENU_AGIR: case EXIBINDO_TEXTO:
             DrawRectangleLinesEx(caixaInterfaceInferior, 4.0f * scaleX, WHITE);
@@ -447,23 +455,19 @@ static void DesenharJogoInterno(void){
     DesenharInterfaceInterna();
     EndDrawing();
 }
-
 static void DesenharInterfaceInterna(void){
     float currentScreenWidth = (float)GetScreenWidth();
     float currentScreenHeight = (float)GetScreenHeight();
     float scaleX = currentScreenWidth / DESIGN_LARGURA_ECRA;
     float scaleY = currentScreenHeight / DESIGN_ALTURA_ECRA;
-
     DrawText(TextFormat("Questoes Resolvidas: %d/%d", acm.questoesResolvidas, QUESTOES_TOTAIS), currentScreenWidth/2-(int)(MeasureText("Questoes Resolvidas: 0/0", (int)(40*scaleY))/2), (int)(45*scaleY), (int)(40*scaleY), WHITE);
     DrawText(TextFormat("SANIDADE: %d", aluno.sanidade), (int)(40*scaleX), currentScreenHeight-(int)(60*scaleY), (int)(40*scaleY), WHITE);
 }
-
 static void DesenharTurnoJogadorInterna(void){
     float currentScreenWidth = (float)GetScreenWidth();
     float currentScreenHeight = (float)GetScreenHeight();
     float scaleX = currentScreenWidth / DESIGN_LARGURA_ECRA;
     float scaleY = currentScreenHeight / DESIGN_ALTURA_ECRA;
-
     DrawText(textoDialogo, caixaInterfaceInferior.x+(int)(30*scaleX), caixaInterfaceInferior.y+(int)(30*scaleY), (int)(30*scaleY), WHITE);
     DrawRectangleRec(botoesMenu[0], DARKGRAY); DrawText("AGIR", botoesMenu[0].x+(int)(75*scaleX), botoesMenu[0].y+(int)(15*scaleY), (int)(40*scaleY), WHITE);
     DrawRectangleRec(botoesMenu[1], DARKGRAY); DrawText("ITEM", botoesMenu[1].x+(int)(75*scaleX), botoesMenu[1].y+(int)(15*scaleY), (int)(40*scaleY), WHITE);
@@ -471,13 +475,11 @@ static void DesenharTurnoJogadorInterna(void){
     DrawRectangleRec(botoesMenu[3], DARKGRAY); DrawText("DESISTIR", botoesMenu[3].x+(int)(35*scaleX), botoesMenu[3].y+(int)(15*scaleY), (int)(40*scaleY), WHITE);
     DrawCircle(botoesMenu[menuSel].x-(int)(30*scaleX), botoesMenu[menuSel].y+(int)(35*scaleY), (int)(12*scaleX), RED);
 }
-
 static void DesenharMenuAgirInterna(void){
     float currentScreenWidth = (float)GetScreenWidth();
     float currentScreenHeight = (float)GetScreenHeight();
     float scaleX = currentScreenWidth / DESIGN_LARGURA_ECRA;
     float scaleY = currentScreenHeight / DESIGN_ALTURA_ECRA;
-
     DrawRectangleRec(botoesMenu[0], DARKGRAY); DrawText("AGIR", botoesMenu[0].x+(int)(75*scaleX), botoesMenu[0].y+(int)(15*scaleY), (int)(40*scaleY), GRAY);
     DrawRectangleRec(botoesMenu[1], DARKGRAY); DrawText("ITEM", botoesMenu[1].x+(int)(75*scaleX), botoesMenu[1].y+(int)(15*scaleY), (int)(40*scaleY), GRAY);
     DrawRectangleRec(botoesMenu[2], DARKGRAY); DrawText("PROVA", botoesMenu[2].x+(int)(65*scaleX), botoesMenu[2].y+(int)(15*scaleY), (int)(40*scaleY), GRAY);
@@ -485,34 +487,27 @@ static void DesenharMenuAgirInterna(void){
     for(int i=0; i<3; i++){DrawText(opcoesMenuAgir[i], caixaInterfaceInferior.x+(int)(70*scaleX), caixaInterfaceInferior.y+(int)(50*scaleY)+i*(int)(70*scaleY), (int)(40*scaleY), WHITE);}
     DrawCircle(caixaInterfaceInferior.x+(int)(40*scaleX), caixaInterfaceInferior.y+(int)(70*scaleY)+menuAgirSel*(int)(70*scaleY), (int)(10*scaleX), RED);
 }
-
 static void DesenharCaixaDialogoInterna(void){
     float currentScreenWidth = (float)GetScreenWidth();
     float currentScreenHeight = (float)GetScreenHeight();
     float scaleX = currentScreenWidth / DESIGN_LARGURA_ECRA;
     float scaleY = currentScreenHeight / DESIGN_ALTURA_ECRA;
-
     DrawText(textoDialogo, caixaInterfaceInferior.x+(int)(30*scaleX), caixaInterfaceInferior.y+(int)(30*scaleY), (int)(40*scaleY), WHITE);
 }
-
 static void DesenharTurnoInimigoInterna(void){
     float currentScreenWidth = (float)GetScreenWidth();
     float currentScreenHeight = (float)GetScreenHeight();
     float scaleX = currentScreenWidth / DESIGN_LARGURA_ECRA;
     float scaleY = currentScreenHeight / DESIGN_ALTURA_ECRA;
-
     Color corCaixa = acm.turnoFinalAtivo ? GOLD : WHITE;
     if(acm.delayInicialTimer>0) if(fmodf(acm.delayInicialTimer*5,0.5f)>0.25f) corCaixa=RED;
     if(acm.turnoFinalAtivo && (int)(acm.temporizadorTurno*2)%2==0) DrawRectangleLinesEx(caixaBatalha, 6.0f * scaleX, RED);
     else DrawRectangleLinesEx(caixaBatalha, 4.0f * scaleX, corCaixa);
-
     if(acm.padraoAtual==ATAQUE_LETRA_C && acm.estagioAtaque==1) DrawRingLines(acm.posLetraC, 100 * scaleX, 120 * scaleX, 45+acm.rotacaoLetraC, 315+acm.rotacaoLetraC, 30 * scaleX, Fade(DARKGRAY, 0.8f));
     if(acm.padraoAtual==ATAQUE_FINAL) for(int i=0; i<MAX_LASERS; i++) if(acm.lasers[i].blasterPos.y > 0) DrawRingLines(acm.lasers[i].blasterPos, 40 * scaleX, 50 * scaleX, 45+acm.lasers[i].rotation, 315+acm.lasers[i].rotation, 20 * scaleX, Fade(DARKGRAY, 0.9f));
-
     if(aluno.acabouDeDarDash && aluno.temporizadorInvencibilidade > 0){ float a = (aluno.temporizadorInvencibilidade/0.3f); DrawCircleV(aluno.position, 15.0f * scaleX, Fade(SKYBLUE, 0.5f*a)); }
     bool drawP=true; if(aluno.temporizadorInvencibilidade > 0 && !aluno.acabouDeDarDash) if(fmodf(aluno.temporizadorInvencibilidade, 0.2f) < 0.1f) drawP=false;
     if(drawP) DrawCircleV(aluno.position, 12.0f * scaleX, RED);
-
     if(acm.delayInicialTimer <= 0){
         for(int i=0; i<MAX_PROJETEIS; i++) if(projeteis[i].active) DrawCircleV(projeteis[i].position, projeteis[i].radius * scaleX, projeteis[i].color);
         for(int i=0; i<MAX_LASERS; i++) if(acm.lasers[i].stage > 0){
@@ -521,7 +516,6 @@ static void DesenharTurnoInimigoInterna(void){
         }
     }
 }
-
 static void AtivarProjetil(Vector2 p, Vector2 v, float r, Color c, TipoProjetil t, float life){
     for(int i=0; i<MAX_PROJETEIS; i++) if(!projeteis[i].active){
         projeteis[i] = (Projetil){p, v, r, life, 0, true, c, t};
@@ -529,13 +523,11 @@ static void AtivarProjetil(Vector2 p, Vector2 v, float r, Color c, TipoProjetil 
         return;
     }
 }
-
 static void CriarExplosaoEstelar(Vector2 p, float modVel){
     float currentScreenWidth = (float)GetScreenWidth();
     float currentScreenHeight = (float)GetScreenHeight();
     float scaleX = currentScreenWidth / DESIGN_LARGURA_ECRA;
     float scaleY = currentScreenHeight / DESIGN_ALTURA_ECRA;
-
     int nF = 4;
     for(int i=0; i<nF; i++){
         float a = PI + (((float)i/(nF-1))*PI);
@@ -543,16 +535,13 @@ static void CriarExplosaoEstelar(Vector2 p, float modVel){
         AtivarProjetil(p, v, 8.0f * scaleX, Fade(WHITE, 0.8f), FRAGMENTO_ESTELAR, 0);
     }
 }
-
 static void ExecutarAtaqueChefe(float modVel) {
     acm.temporizadorSubAtaque-=GetFrameTime();
     Vector2 pOrigem = {acm.corpoVisual.x+acm.corpoVisual.width/2, acm.corpoVisual.y+acm.corpoVisual.height};
-
     float currentScreenWidth = (float)GetScreenWidth();
     float currentScreenHeight = (float)GetScreenHeight();
     float scaleX = currentScreenWidth / DESIGN_LARGURA_ECRA;
     float scaleY = currentScreenHeight / DESIGN_ALTURA_ECRA;
-
     switch(acm.padraoAtual){
         case RAJADA_RAPIDA:
             if(acm.temporizadorSubAtaque>0)return; acm.temporizadorSubAtaque=0.15f;
@@ -588,8 +577,8 @@ static void ExecutarAtaqueChefe(float modVel) {
             Vector2 v1={cosf(acm.anguloEspiral)*velEsp, sinf(acm.anguloEspiral)*velEsp}; AtivarProjetil(pOrigem,v1,r * scaleX,VIOLET,PROJETIL_NORMAL,0);
             Vector2 v2={cosf(-acm.anguloEspiral)*velEsp, sinf(-acm.anguloEspiral)*velEsp}; AtivarProjetil(pOrigem,v2,r * scaleX,SKYBLUE,PROJETIL_NORMAL,0);
             if((int)(acm.temporizadorTurno*10)%15==0){
-                    float angVerde=atan2f(aluno.position.y-pOrigem.y,aluno.position.x-pOrigem.x);
-                    Vector2 v3={cosf(angVerde)*400.0f*modVel*scaleY, sinf(angVerde)*400.0f*modVel*scaleY}; AtivarProjetil(pOrigem,v3,15.0f * scaleX,GREEN,PROJETIL_NORMAL,0);
+                        float angVerde=atan2f(aluno.position.y-pOrigem.y,aluno.position.x-pOrigem.x);
+                        Vector2 v3={cosf(angVerde)*400.0f*modVel*scaleY, sinf(angVerde)*400.0f*modVel*scaleY}; AtivarProjetil(pOrigem,v3,15.0f * scaleX,GREEN,PROJETIL_NORMAL,0);
             }
             break;
         case CHUVA_ESTELAR_ANGULAR:
@@ -608,7 +597,7 @@ static void ExecutarAtaqueChefe(float modVel) {
             AtivarProjetil(pL,(Vector2){0,0},10.0f * scaleX,YELLOW,LANCA_AVISO,0.7f);
             break;
         case COMBO_CAOTICO:
-            acm.anguloEspiral+=0.2f; 
+            acm.anguloEspiral+=0.2f;
             float velCaos = 450.0f * modVel * scaleY;
             Vector2 vC1={cosf(acm.anguloEspiral)*velCaos, sinf(acm.anguloEspiral)*velCaos};
             AtivarProjetil(pOrigem,vC1,8.0f * scaleX,VIOLET,PROJETIL_NORMAL,0);
