@@ -1,23 +1,10 @@
-// undertale_jogo.c
-/*******************************************************************************************
-*
-* Parceiro de Programação - Jogo "Recuperação Final" (Versão 8.6 - FINAL COMPLETA)
-*
-* Resumo das Correções:
-* - Velocidade ajustada para resolução HD (Multiplicada por ScaleY).
-* - Carregamento de Som "Blindado" (Tenta caminhos diferentes).
-* - Carregamento de Imagem "Blindado".
-* - Sistema de "Ressuscitação" de Áudio (Verifica se device está ready).
-* - Todas as funções de desenho incluídas.
-*
-********************************************************************************************/
 #include "raylib.h"
 #include <math.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
-#include <stdio.h> // Para logs de debug
+#include <stdio.h> 
 
 // Enum para telas (Compartilhado com menu.c)
 typedef enum {
@@ -82,7 +69,7 @@ static Sound fxShoot;
 static Sound fxLaserCharge;
 static Sound fxLaserFire;
 static Sound fxMenuSelectGame;
-static Sound fxDamage; // [NOVO] Variável para o som de dano
+static Sound fxDamage;
 static Texture2D texturaProfessor;
 static Music musicBackground;
 
@@ -142,7 +129,7 @@ void RunUndertaleGame(GameScreen *currentScreen) {
 
     // --- GARANTIA DE ÁUDIO ---
     if (!IsAudioDeviceReady()) InitAudioDevice();
-    SetMasterVolume(1.0f); // Volume máximo
+    SetMasterVolume(1.0f); 
 
     TraceLog(LOG_INFO, "DEBUG: Tentando carregar sons...");
     // Carregamento de Sons
@@ -172,7 +159,6 @@ void RunUndertaleGame(GameScreen *currentScreen) {
 
     // LOOP DO JOGO
     while (*currentScreen == SCREEN_GAME && !WindowShouldClose()) {
-        // Segurança extra: se o áudio cair, tenta religar
         if (!IsAudioDeviceReady()) InitAudioDevice();
 
         // Atualiza o stream da música
@@ -188,7 +174,7 @@ void RunUndertaleGame(GameScreen *currentScreen) {
                 *currentScreen = SCREEN_MENU;
                 // Limpeza
                 UnloadSound(fxHit); UnloadSound(fxShoot); UnloadSound(fxLaserCharge);
-                UnloadSound(fxLaserFire); UnloadSound(fxMenuSelectGame); UnloadSound(fxDamage); // [NOVO] Descarrega o som de dano
+                UnloadSound(fxLaserFire); UnloadSound(fxMenuSelectGame); UnloadSound(fxDamage);
                 UnloadTexture(texturaProfessor);
                 // Descarrega a música
                 UnloadMusicStream(musicBackground);
@@ -201,7 +187,7 @@ void RunUndertaleGame(GameScreen *currentScreen) {
     if (WindowShouldClose()) {
         *currentScreen = SCREEN_EXIT;
         UnloadSound(fxHit); UnloadSound(fxShoot); UnloadSound(fxLaserCharge);
-        UnloadSound(fxLaserFire); UnloadSound(fxMenuSelectGame); UnloadSound(fxDamage); // [NOVO] Descarrega o som de dano
+        UnloadSound(fxLaserFire); UnloadSound(fxMenuSelectGame); UnloadSound(fxDamage);
         UnloadTexture(texturaProfessor);
         // Descarrega a música
         UnloadMusicStream(musicBackground);
@@ -258,14 +244,13 @@ static void AtualizarJogoInterno(void) {
     }
 }
 static void AtualizarTurnoJogadorInterna(void) {
-    // [MODIFICADO] Removidas chamadas de PlaySound(fxMenuSelectGame) ao mover a seleção
     if (IsKeyPressed(KEY_RIGHT) && (menuSel == 0 || menuSel == 2)) { menuSel++; }
     if (IsKeyPressed(KEY_LEFT) && (menuSel == 1 || menuSel == 3)) { menuSel--; }
     if (IsKeyPressed(KEY_DOWN) && (menuSel == 0 || menuSel == 1)) { menuSel += 2; }
     if (IsKeyPressed(KEY_UP) && (menuSel == 2 || menuSel == 3)) { menuSel -= 2; }
 
     if (IsKeyPressed(KEY_Z)) {
-        PlaySound(fxMenuSelectGame); // [MANTIDO] Toca o som ao CONFIRMAR a seleção
+        PlaySound(fxMenuSelectGame);
         acaoTerminaTurno = false;
         estadoAtualInterno = EXIBINDO_TEXTO;
         switch (menuSel) {
@@ -288,14 +273,13 @@ static void AtualizarTurnoJogadorInterna(void) {
     }
 }
 static void AtualizarMenuAgirInterna(void) {
-    // [MODIFICADO] Removidas chamadas de PlaySound(fxMenuSelectGame) ao mover a seleção
     if (IsKeyPressed(KEY_DOWN)) { menuAgirSel++; }
     if (IsKeyPressed(KEY_UP)) { menuAgirSel--; }
     if (menuAgirSel < 0) menuAgirSel = 2;
     if (menuAgirSel > 2) menuAgirSel = 0;
 
     if (IsKeyPressed(KEY_Z)) {
-        PlaySound(fxMenuSelectGame); // [MANTIDO] Toca o som ao CONFIRMAR a seleção
+        PlaySound(fxMenuSelectGame); 
         acaoTerminaTurno = true;
         estadoAtualInterno = EXIBINDO_TEXTO;
         switch (menuAgirSel) {
@@ -332,13 +316,13 @@ static void AtualizarMenuAgirInterna(void) {
         }
     }
     if (IsKeyPressed(KEY_X)) {
-        PlaySound(fxMenuSelectGame); // [MANTIDO] Toca o som ao VOLTAR
+        PlaySound(fxMenuSelectGame);
         estadoAtualInterno = TURNO_JOGADOR;
     }
 }
 static void AtualizarExibindoTextoInterna(void) {
     if (IsKeyPressed(KEY_Z)) {
-        PlaySound(fxMenuSelectGame); // [MANTIDO] Toca o som ao AVANÇAR no texto
+        PlaySound(fxMenuSelectGame);
         if (acaoTerminaTurno) MudarParaTurnoInimigoInterno();
         else estadoAtualInterno = TURNO_JOGADOR;
     }
@@ -406,7 +390,7 @@ static void AtualizarTurnoInimigoInterna(void) {
             if (!CheckCollisionPointRec(projeteis[i].position, (Rectangle){-200 * scaleX, -200 * scaleY, currentScreenWidth + 400 * scaleX, currentScreenHeight + 400 * scaleY}) && (projeteis[i].type != PROJETIL_RICOCHETE || projeteis[i].ricochetes >= 2) ) { projeteis[i].active = false; }
             if (CheckCollisionCircles(aluno.position, 8.0f * scaleX, projeteis[i].position, projeteis[i].radius * scaleX) && aluno.temporizadorInvencibilidade <= 0) {
                 aluno.sanidade--; aluno.temporizadorInvencibilidade = 1.2f; aluno.acabouDeDarDash = false;
-                PlaySound(fxDamage); // [NOVO] Toca o som de dano
+                PlaySound(fxDamage);
                 if (aluno.sanidade <= 0) { aluno.sanidade = 0; estadoAtualInterno = GAME_OVER; }
             }
         }
@@ -418,7 +402,7 @@ static void AtualizarTurnoInimigoInterna(void) {
             }
             if (acm.lasers[i].stage == 2 && CheckCollisionCircleRec(aluno.position, 8.0f * scaleX, acm.lasers[i].rect) && aluno.temporizadorInvencibilidade <= 0) {
                 aluno.sanidade--; aluno.temporizadorInvencibilidade = 1.2f; aluno.acabouDeDarDash = false;
-                PlaySound(fxDamage); // [NOVO] Toca o som de dano
+                PlaySound(fxDamage);
                 if (aluno.sanidade <= 0) { aluno.sanidade = 0; estadoAtualInterno = GAME_OVER; }
             }
         }
