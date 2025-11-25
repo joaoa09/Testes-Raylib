@@ -1,13 +1,3 @@
-/*******************************************************************************************
-*
-* raylib - Luta inspirada em Undertale (Asriel Dreemur) - VERSÃO DE COMPATIBILIDADE FINAL
-*
-* Este código foi ajustado para funcionar com versões muito antigas da biblioteca Raylib.
-* Todas as funções de desenho em Imagem foram substituídas por métodos manuais
-* (pixel-a-pixel) para garantir a máxima compatibilidade.
-*
-********************************************************************************************/
-
 #include "raylib.h"
 #include <stdlib.h>
 #include <time.h>
@@ -393,7 +383,7 @@ void UpdateDrawFrame(void)
 }
 
 //----------------------------------------------------------------------------------
-// Funções de Criação de Texturas (VERSÃO DE COMPATIBILIDADE MÁXIMA)
+// Funções de Criação de Texturas
 //----------------------------------------------------------------------------------
 
 Texture2D CreateHeartTexture(void) {
@@ -461,7 +451,6 @@ Texture2D CreateLightningStrikeTexture(void) {
 Texture2D CreateChaosSaberTexture(void) {
     Image saber = GenImageColor(SCREEN_WIDTH, SCREEN_HEIGHT / 2, BLANK);
     
-    // *** CORREÇÃO: Substituído ImageDrawRectangleGradientV por um loop manual pixel-a-pixel ***
     Color startColor = {0, 121, 241, 150};
     Color endColor = {41, 178, 255, 150};
 
