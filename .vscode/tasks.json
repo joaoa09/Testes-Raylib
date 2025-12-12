@@ -9,7 +9,6 @@
             "args": [
                 "-o",
                 "build/meujogo.exe",
-                "src/menu.c",
                 "src/undertale_jogo.c", // <--- Esta linha garante que o jogo seja compilado junto
                 "-I", "C:/raylib/raylib/include",
                 "-L", "C:/raylib/raylib/lib",
