@@ -20,8 +20,8 @@
 #define VIDA_DIFICIL 5
 
 // Configurações Fase 1
-#define QUESTOES_TOTAIS 3
-#define ESTUDOS_POR_QUESTAO 3
+#define QUESTOES_TOTAIS 1
+#define ESTUDOS_POR_QUESTAO 1
 #define TEMPO_TURNO_INIMIGO 10.0f
 #define MAX_PROJETEIS 500
 #define MAX_LASERS 8
@@ -243,7 +243,10 @@ static const char *opcoesMenuAgir[] = { "Descricao", "Estudar", "Resolver Questa
 static int menuAgirSel = 0;
 static Sound fxHit, fxShoot, fxLaserCharge, fxLaserFire, fxMenuSelectGame, fxDamage;
 static Texture2D texturaProfessor;
-static Music musicBackground;
+static Music musicBackground;   // Fase 1
+static Music musicFase2;        // Fase 2
+static Music musicFinal;        // Toca quando o jogador vence o jogo
+
 
 // Fase 2
 static EstadoFase2 estadoFase2;
@@ -436,7 +439,7 @@ int main(void) {
 
                 if(easterEgg.isHovered) DrawTextEx(font, easterEgg.text, easterEgg.position, 24, 2, easterEgg.hoverColor);
                 DrawHeart(playerHeart, RED);
-                DrawText("[WASD] Mover  [Z] Confirmar  [X] Voltar", MENU_LARGURA/2 - MeasureText("[WASD] Mover  [Z] Confirmar  [X] Voltar", 18)/2, MENU_ALTURA - 30, 18, GRAY);
+                DrawText("[WASD/Setas] Mover  [Z] Confirmar  [X] Voltar", MENU_LARGURA/2 - MeasureText("[WASD/Setas] Mover  [Z] Confirmar  [X] Voltar", 18)/2, MENU_ALTURA - 30, 18, GRAY);
                 EndDrawing();
                 break;
             }
@@ -601,10 +604,12 @@ void RunUndertaleGame(GameScreen *currentScreen) {
                 IniciarFase2();
 
                 // Loop Fase 2
-                while (*currentScreen == SCREEN_GAME && !WindowShouldClose()) {
-                    UpdateMusicStream(musicFase2);
-                    AtualizarFase2();
-                    DesenharFase2();
+                while(*currentScreen == SCREEN_GAME && !WindowShouldClose()){
+                if(musicFase2.frameCount > 0) UpdateMusicStream(musicFase2);
+                if(musicFinal.frameCount > 0) UpdateMusicStream(musicFinal);
+
+                AtualizarFase2();
+                DesenharFase2();
 
                     if (estadoFase2 == FASE2_GAME_OVER || estadoFase2 == FASE2_VITORIA) {
                         if (IsKeyPressed(KEY_Z)) {
@@ -620,7 +625,10 @@ void RunUndertaleGame(GameScreen *currentScreen) {
                             UnloadTexture(texHyperGonerCharge);
                             UnloadTexture(texHyperGonerBeam);
                             UnloadTexture(texBackgroundStar);
-                            UnloadMusicStream(musicFase2);
+
+                            if(musicFase2.frameCount > 0) UnloadMusicStream(musicFase2);
+                            if(musicFinal.frameCount > 0) UnloadMusicStream(musicFinal);
+
                             // Cleanup Fase 1
                             UnloadSound(fxHit); UnloadSound(fxShoot); 
                             UnloadSound(fxLaserCharge); UnloadSound(fxLaserFire); 
@@ -1436,18 +1444,27 @@ void IniciarFase2(void){
     texHyperGonerBeam = CreateHyperGonerBeamTexture();
     texBackgroundStar = CreateBackgroundStarTexture();
 
-    musicFase2 = CarregarMusicaSegura("hopes_and_dreams.ogg");
+    // Musica da fase 2 (final boss)
+    musicFase2 = CarregarMusicaSegura("finall_boss_music.mp3");
     if(musicFase2.frameCount > 0){
-        PlayMusicStream(musicFase2);
-        SetMusicVolume(musicFase2, 0.6f);
+    PlayMusicStream(musicFase2);
+    SetMusicVolume(musicFase2, 0.7f);
     }
+
+    // Musica de vitoria final (carregada aqui, tocada depois)
+    musicFinal = CarregarMusicaSegura("musica_final.mp3");
 
     InitAttack(STAR_BLAZING);
     attackDuration = 12.0f; // Mais tempo por ataque (era 10)
 }
 
 void AtualizarFase2(void){
-        static int waveIndex = 0;
+
+    if(estadoFase2 != FASE2_GAMEPLAY) return;
+
+    static int waveIndex = 0;
+
+    attackTimer += GetFrameTime();
 
     attackTimer += GetFrameTime();
     if(attackTimer >= attackDuration){
@@ -1519,17 +1536,24 @@ void AtualizarFase2(void){
     backgroundStarRotation += 10 * GetFrameTime();
 
     if(player.hp <= 0){
-        estadoFase2 = FASE2_GAME_OVER;
-        StopMusicStream(musicFase2);
+    estadoFase2 = FASE2_GAME_OVER;
+    StopMusicStream(musicFase2);
     }
 
-    // Vitória após 60 segundos (era mais difícil antes)
+    // Vitória após 60 segundos
     static float tempoTotal = 0;
     tempoTotal += GetFrameTime();
-    if(tempoTotal > 60.0f){
+    if(tempoTotal > 60.0f && estadoFase2 == FASE2_GAMEPLAY){
         estadoFase2 = FASE2_VITORIA;
         StopMusicStream(musicFase2);
+
+    // Toca musica_final.mp3 na tela de vitória
+    if(musicFinal.frameCount > 0){
+        PlayMusicStream(musicFinal);
+        SetMusicVolume(musicFinal, 0.8f);
     }
+}
+
 }
 
 void DesenharFase2(void){
