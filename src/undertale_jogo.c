@@ -23,8 +23,8 @@
 #define QUESTOES_TOTAIS 1
 #define ESTUDOS_POR_QUESTAO 1
 #define TEMPO_TURNO_INIMIGO 10.0f
-#define MAX_PROJETEIS 500
-#define MAX_LASERS 8
+#define PROJETEIS_MAXIMOS 500
+#define MAXIMO_PROJETEIS 8
 
 // Configurações Fase 2 (Asriel)
 #define PLAYER_SPEED 5.0f
@@ -39,8 +39,8 @@
 #define HEART_SPEED 300.0f
 
 
-    float currentScreenWidth;
-    float currentScreenHeight;
+    float larguraTelaAtual;
+    float alturaTelaAtual;
 
 // ============================================================================
 // ENUMS
@@ -174,7 +174,7 @@ typedef struct {
     Vector2 posAtaqueSalva;
     Vector2 posLetraC; 
     float rotacaoLetraC;
-    Laser lasers[MAX_LASERS];
+    Laser lasers[MAXIMO_PROJETEIS];
 } Professor;
 
 typedef struct { 
@@ -233,7 +233,7 @@ static Sound fxSelect;
 static EstadoJogoInterno estadoAtualInterno;
 static Aluno aluno;
 static Professor acm;
-static Projetil projeteis[MAX_PROJETEIS];
+static Projetil projeteis[PROJETEIS_MAXIMOS];
 static Rectangle caixaBatalha, caixaInterfaceInferior;
 static char textoDialogo[256];
 static bool acaoTerminaTurno;
@@ -350,8 +350,8 @@ int main(void) {
     SetTargetFPS(60);
     InitAudioDevice();
     SetMasterVolume(1.0f);
-    float currentScreenWidth = (float)GetScreenWidth();
-    float currentScreenHeight = (float)GetScreenHeight();
+    float larguraTelaAtual = (float)GetScreenWidth();
+    float alturaTelaAtual = (float)GetScreenHeight();
 
     fxSelect = CarregarSomSeguro("select.wav");
 
@@ -660,20 +660,20 @@ static void IniciarJogoInterno(void) {
     menuAgirSel = 0;
     strcpy(textoDialogo, "* Professor ACM encara voce. A prova final definira seu futuro.");
 
-    float currentScreenWidth = (float)GetScreenWidth();
-    float currentScreenHeight = (float)GetScreenHeight();
+    float larguraTelaAtual = (float)GetScreenWidth();
+    float alturaTelaAtual = (float)GetScreenHeight();
 
-    float scaleX = currentScreenWidth / GAME_LARGURA;
-    float scaleY = currentScreenHeight / GAME_ALTURA;
+    float scaleX = larguraTelaAtual / GAME_LARGURA;
+    float scaleY = alturaTelaAtual / GAME_ALTURA;
 
     caixaBatalha = (Rectangle){
-        currentScreenWidth/2.0f - (800.0f * scaleX)/2.0f, 
+        larguraTelaAtual/2.0f - (800.0f * scaleX)/2.0f, 
         320.0f * scaleY, 
         800.0f * scaleX, 
         400.0f * scaleY
     };
     caixaInterfaceInferior = (Rectangle){
-        currentScreenWidth/2.0f - (1520.0f * scaleX)/2.0f, 
+        larguraTelaAtual/2.0f - (1520.0f * scaleX)/2.0f, 
         750.0f * scaleY, 
         1520.0f * scaleX, 
         300.0f * scaleY
@@ -692,7 +692,7 @@ static void IniciarJogoInterno(void) {
     };
 
     acm = (Professor){
-        (Rectangle){currentScreenWidth/2.0f - (100.0f * scaleX), 100.0f * scaleY, 200.0f * scaleX, 200.0f * scaleY},
+        (Rectangle){larguraTelaAtual/2.0f - (100.0f * scaleX), 100.0f * scaleY, 200.0f * scaleX, 200.0f * scaleY},
         0, 0, false, false, false, 0,
         PADRAO_NULO, TEMPO_TURNO_INIMIGO, 0, 0, 0, 0, 0,
         (Vector2){-1000,-1000}, 0
@@ -711,8 +711,8 @@ static void IniciarJogoInterno(void) {
     botoesMenuGame[2] = (Rectangle){sX, sY + btnH + sp, btnW, btnH};
     botoesMenuGame[3] = (Rectangle){sX + btnW + sp, sY + btnH + sp, btnW, btnH};
 
-    for(int i=0; i<MAX_PROJETEIS; i++) projeteis[i].active = false;
-    for(int i=0; i<MAX_LASERS; i++) acm.lasers[i] = (Laser){0};
+    for(int i=0; i<PROJETEIS_MAXIMOS; i++) projeteis[i].active = false;
+    for(int i=0; i<MAXIMO_PROJETEIS; i++) acm.lasers[i] = (Laser){0};
 }
 
 static void MudarParaTurnoInimigoInterno(void) {
@@ -724,8 +724,8 @@ static void MudarParaTurnoInimigoInterno(void) {
     acm.estagioAtaque = 0; 
     acm.contadorAtaque = 0;
 
-    for(int i=0; i<MAX_PROJETEIS; i++) projeteis[i].active = false;
-    for(int i=0; i<MAX_LASERS; i++) acm.lasers[i] = (Laser){0};
+    for(int i=0; i<PROJETEIS_MAXIMOS; i++) projeteis[i].active = false;
+    for(int i=0; i<MAXIMO_PROJETEIS; i++) acm.lasers[i] = (Laser){0};
 
     int r = rand() % 100;
     if (acm.turnoFinalAtivo) acm.padraoAtual = ATAQUE_FINAL;
@@ -853,10 +853,10 @@ static void AtualizarExibindoTextoInterna(void) {
 }
 
 static void AtualizarTurnoInimigoInterna(void) {
-    float currentScreenWidth = (float)GetScreenWidth();
-    float currentScreenHeight = (float)GetScreenHeight();
-    float scaleX = currentScreenWidth / GAME_LARGURA;
-    float scaleY = currentScreenHeight / GAME_ALTURA;
+    float larguraTelaAtual = (float)GetScreenWidth();
+    float alturaTelaAtual = (float)GetScreenHeight();
+    float scaleX = larguraTelaAtual / GAME_LARGURA;
+    float scaleY = alturaTelaAtual / GAME_ALTURA;
 
     if (aluno.temporizadorInvencibilidade > 0) aluno.temporizadorInvencibilidade -= GetFrameTime();
     if (aluno.dashCooldown > 0) aluno.dashCooldown -= GetFrameTime();
@@ -893,7 +893,7 @@ static void AtualizarTurnoInimigoInterna(void) {
         float modVel = 1.0f + (float)acm.turnosTotaisPassados * 0.1f;
         ExecutarAtaqueChefe(modVel);
 
-        for (int i=0; i<MAX_PROJETEIS; i++) {
+        for (int i=0; i<PROJETEIS_MAXIMOS; i++) {
             if (projeteis[i].active) {
                 projeteis[i].position.x += projeteis[i].speed.x * GetFrameTime();
                 projeteis[i].position.y += projeteis[i].speed.y * GetFrameTime();
@@ -928,7 +928,7 @@ static void AtualizarTurnoInimigoInterna(void) {
                     }
                 }
 
-                if (!CheckCollisionPointRec(projeteis[i].position, (Rectangle){-200 * scaleX, -200 * scaleY, currentScreenWidth + 400 * scaleX, currentScreenHeight + 400 * scaleY}) && (projeteis[i].type != PROJETIL_RICOCHETE || projeteis[i].ricochetes >= 2) ) { 
+                if (!CheckCollisionPointRec(projeteis[i].position, (Rectangle){-200 * scaleX, -200 * scaleY, larguraTelaAtual + 400 * scaleX, alturaTelaAtual + 400 * scaleY}) && (projeteis[i].type != PROJETIL_RICOCHETE || projeteis[i].ricochetes >= 2) ) { 
                     projeteis[i].active = false; 
                 }
 
@@ -942,7 +942,7 @@ static void AtualizarTurnoInimigoInterna(void) {
             }
         }
 
-        for (int i=0; i<MAX_LASERS; i++) {
+        for (int i=0; i<MAXIMO_PROJETEIS; i++) {
             if (acm.lasers[i].stage > 0) {
                 acm.lasers[i].timer -= GetFrameTime();
                 if (acm.lasers[i].timer <= 0) {
@@ -968,10 +968,10 @@ static void AtualizarTurnoInimigoInterna(void) {
 }
 
 static void DesenharJogoInterno(void){
-    float currentScreenWidth = (float)GetScreenWidth();
-    float currentScreenHeight = (float)GetScreenHeight();
-    float scaleX = currentScreenWidth / GAME_LARGURA;
-    float scaleY = currentScreenHeight / GAME_ALTURA;
+    float larguraTelaAtual = (float)GetScreenWidth();
+    float alturaTelaAtual = (float)GetScreenHeight();
+    float scaleX = larguraTelaAtual / GAME_LARGURA;
+    float scaleY = alturaTelaAtual / GAME_ALTURA;
 
     BeginDrawing();
     ClearBackground(BLACK);
@@ -999,20 +999,20 @@ static void DesenharJogoInterno(void){
             DesenharTurnoInimigoInterna(); 
             break;
         case GAME_OVER_FASE1: 
-            DrawText("REPROVADO", currentScreenWidth/2-MeasureText("REPROVADO", (int)(100*scaleY))/2, currentScreenHeight/2-(int)(50*scaleY), (int)(100*scaleY), GRAY); 
-            DrawText("[Z] Voltar ao Menu", currentScreenWidth/2-MeasureText("[Z] Voltar ao Menu", (int)(30*scaleY))/2, currentScreenHeight/2+(int)(100*scaleY), (int)(30*scaleY), WHITE);
+            DrawText("REPROVADO", larguraTelaAtual/2-MeasureText("REPROVADO", (int)(100*scaleY))/2, alturaTelaAtual/2-(int)(50*scaleY), (int)(100*scaleY), GRAY); 
+            DrawText("[Z] Voltar ao Menu", larguraTelaAtual/2-MeasureText("[Z] Voltar ao Menu", (int)(30*scaleY))/2, alturaTelaAtual/2+(int)(100*scaleY), (int)(30*scaleY), WHITE);
             break;
         case VITORIA_FASE1: 
-            DrawText("APROVADO!", currentScreenWidth/2-MeasureText("APROVADO!", (int)(100*scaleY))/2, currentScreenHeight/2-(int)(50*scaleY), (int)(100*scaleY), GOLD); 
+            DrawText("APROVADO!", larguraTelaAtual/2-MeasureText("APROVADO!", (int)(100*scaleY))/2, alturaTelaAtual/2-(int)(50*scaleY), (int)(100*scaleY), GOLD); 
             break;
         case TRANSICAO_FASE2:
-            DrawRectangle(0, 0, currentScreenWidth, currentScreenHeight, Fade(WHITE, transicaoAlpha));
+            DrawRectangle(0, 0, larguraTelaAtual, alturaTelaAtual, Fade(WHITE, transicaoAlpha));
                         if(transicaoTimer > 1.0f){
                 const char* txt = "AGORA VOCE ENTRA NO DESAFIO FINAL, BOA SORTE";
                 int fontSize = (int)(40 * scaleY);
                 DrawText(txt,
-                         currentScreenWidth/2 - MeasureText(txt, fontSize)/2,
-                         currentScreenHeight/2,
+                         larguraTelaAtual/2 - MeasureText(txt, fontSize)/2,
+                         alturaTelaAtual/2,
                          fontSize,
                          Fade(BLACK, transicaoAlpha));
             }
@@ -1025,22 +1025,22 @@ static void DesenharJogoInterno(void){
 }
 
 static void DesenharInterfaceInterna(void){
-    float currentScreenWidth = (float)GetScreenWidth();
-    float currentScreenHeight = (float)GetScreenHeight();
-    float scaleX = currentScreenWidth / GAME_LARGURA;
-    float scaleY = currentScreenHeight / GAME_ALTURA;
+    float larguraTelaAtual = (float)GetScreenWidth();
+    float alturaTelaAtual = (float)GetScreenHeight();
+    float scaleX = larguraTelaAtual / GAME_LARGURA;
+    float scaleY = alturaTelaAtual / GAME_ALTURA;
 
     DrawText(TextFormat("Questoes Resolvidas: %d/%d", acm.questoesResolvidas, QUESTOES_TOTAIS), 
-             currentScreenWidth/2-(int)(MeasureText("Questoes Resolvidas: 0/0", (int)(40*scaleY))/2), 
+             larguraTelaAtual/2-(int)(MeasureText("Questoes Resolvidas: 0/0", (int)(40*scaleY))/2), 
              (int)(45*scaleY), (int)(40*scaleY), WHITE);
-    DrawText(TextFormat("SANIDADE: %d", aluno.sanidade), (int)(40*scaleX), currentScreenHeight-(int)(60*scaleY), (int)(40*scaleY), WHITE);
+    DrawText(TextFormat("SANIDADE: %d", aluno.sanidade), (int)(40*scaleX), alturaTelaAtual-(int)(60*scaleY), (int)(40*scaleY), WHITE);
 }
 
 static void DesenharTurnoJogadorInterna(void){
-    float currentScreenWidth = (float)GetScreenWidth();
-    float currentScreenHeight = (float)GetScreenHeight();
-    float scaleX = currentScreenWidth / GAME_LARGURA;
-    float scaleY = currentScreenHeight / GAME_ALTURA;
+    float larguraTelaAtual = (float)GetScreenWidth();
+    float alturaTelaAtual = (float)GetScreenHeight();
+    float scaleX = larguraTelaAtual / GAME_LARGURA;
+    float scaleY = alturaTelaAtual / GAME_ALTURA;
 
     // Tamanho de fonte fixo (~30px em 1080p)
     int fontSizeText = (int)(30 * scaleY);
@@ -1088,10 +1088,10 @@ static void DesenharTurnoJogadorInterna(void){
 
 
 static void DesenharMenuAgirInterna(void){
-    float currentScreenWidth = (float)GetScreenWidth();
-    float currentScreenHeight = (float)GetScreenHeight();
-    float scaleX = currentScreenWidth / GAME_LARGURA;
-    float scaleY = currentScreenHeight / GAME_ALTURA;
+    float larguraTelaAtual = (float)GetScreenWidth();
+    float alturaTelaAtual = (float)GetScreenHeight();
+    float scaleX = larguraTelaAtual / GAME_LARGURA;
+    float scaleY = alturaTelaAtual / GAME_ALTURA;
 
     int fontSizeButtons = (int)(40 * scaleY);
     int fontSizeText = (int)(40 * scaleY);
@@ -1140,10 +1140,10 @@ static void DesenharMenuAgirInterna(void){
 
 
 static void DesenharCaixaDialogoInterna(void){
-    float currentScreenWidth = (float)GetScreenWidth();
-    float currentScreenHeight = (float)GetScreenHeight();
-    float scaleX = currentScreenWidth / GAME_LARGURA;
-    float scaleY = currentScreenHeight / GAME_ALTURA;
+    float larguraTelaAtual = (float)GetScreenWidth();
+    float alturaTelaAtual = (float)GetScreenHeight();
+    float scaleX = larguraTelaAtual / GAME_LARGURA;
+    float scaleY = alturaTelaAtual / GAME_ALTURA;
 
     int fontSizeText = (int)(40 * scaleY);
 
@@ -1156,10 +1156,10 @@ static void DesenharCaixaDialogoInterna(void){
 
 
 static void DesenharTurnoInimigoInterna(void){
-    float currentScreenWidth = (float)GetScreenWidth();
-    float currentScreenHeight = (float)GetScreenHeight();
-    float scaleX = currentScreenWidth / GAME_LARGURA;
-    float scaleY = currentScreenHeight / GAME_ALTURA;
+    float larguraTelaAtual = (float)GetScreenWidth();
+    float alturaTelaAtual = (float)GetScreenHeight();
+    float scaleX = larguraTelaAtual / GAME_LARGURA;
+    float scaleY = alturaTelaAtual / GAME_ALTURA;
 
     Color corCaixa = acm.turnoFinalAtivo ? GOLD : WHITE;
     if (acm.delayInicialTimer > 0) {
@@ -1177,7 +1177,7 @@ static void DesenharTurnoInimigoInterna(void){
     }
 
     if (acm.padraoAtual == ATAQUE_FINAL) {
-        for(int i=0; i<MAX_LASERS; i++) {
+        for(int i=0; i<MAXIMO_PROJETEIS; i++) {
             if (acm.lasers[i].blasterPos.y > 0) {
                 DrawRingLines(acm.lasers[i].blasterPos, 40 * scaleX, 50 * scaleX, 45+acm.lasers[i].rotation, 315+acm.lasers[i].rotation, 20 * scaleX, Fade(DARKGRAY, 0.9f));
             }
@@ -1196,11 +1196,11 @@ static void DesenharTurnoInimigoInterna(void){
     if (drawP) DrawCircleV(aluno.position, 12.0f * scaleX, RED);
 
     if (acm.delayInicialTimer <= 0) {
-        for(int i=0; i<MAX_PROJETEIS; i++) {
+        for(int i=0; i<PROJETEIS_MAXIMOS; i++) {
             if (projeteis[i].active) DrawCircleV(projeteis[i].position, projeteis[i].radius * scaleX, projeteis[i].color);
         }
 
-        for(int i=0; i<MAX_LASERS; i++) {
+        for(int i=0; i<MAXIMO_PROJETEIS; i++) {
             if (acm.lasers[i].stage > 0) {
                 if(acm.lasers[i].stage == 1) {
                     DrawRectanglePro(acm.lasers[i].rect, (Vector2){0, acm.lasers[i].rect.height/2}, acm.lasers[i].rotation, Fade(YELLOW, 0.5f));
@@ -1214,7 +1214,7 @@ static void DesenharTurnoInimigoInterna(void){
 }
 
 static void AtivarProjetil(Vector2 p, Vector2 v, float r, Color c, TipoProjetil t, float life){
-    for(int i=0; i<MAX_PROJETEIS; i++){
+    for(int i=0; i<PROJETEIS_MAXIMOS; i++){
         if(!projeteis[i].active){
             projeteis[i] = (Projetil){p, v, r, life, 0, true, c, t};
             PlaySound(fxShoot);
@@ -1224,10 +1224,10 @@ static void AtivarProjetil(Vector2 p, Vector2 v, float r, Color c, TipoProjetil 
 }
 
 static void CriarExplosaoEstelar(Vector2 p, float modVel){
-    float currentScreenWidth = (float)GetScreenWidth();
-    float currentScreenHeight = (float)GetScreenHeight();
-    float scaleX = currentScreenWidth / GAME_LARGURA;
-    float scaleY = currentScreenHeight / GAME_ALTURA;
+    float larguraTelaAtual = (float)GetScreenWidth();
+    float alturaTelaAtual = (float)GetScreenHeight();
+    float scaleX = larguraTelaAtual / GAME_LARGURA;
+    float scaleY = alturaTelaAtual / GAME_ALTURA;
     int nF = 4;
     for(int i=0; i<nF; i++){
         float a = PI + (((float)i/(nF-1))*PI);
@@ -1239,10 +1239,10 @@ static void CriarExplosaoEstelar(Vector2 p, float modVel){
 static void ExecutarAtaqueChefe(float modVel){
     acm.temporizadorSubAtaque -= GetFrameTime();
     Vector2 pOrigem = {acm.corpoVisual.x+acm.corpoVisual.width/2, acm.corpoVisual.y+acm.corpoVisual.height};
-    float currentScreenWidth = (float)GetScreenWidth();
-    float currentScreenHeight = (float)GetScreenHeight();
-    float scaleX = currentScreenWidth / GAME_LARGURA;
-    float scaleY = currentScreenHeight / GAME_ALTURA;
+    float larguraTelaAtual = (float)GetScreenWidth();
+    float alturaTelaAtual = (float)GetScreenHeight();
+    float scaleX = larguraTelaAtual / GAME_LARGURA;
+    float scaleY = alturaTelaAtual / GAME_ALTURA;
 
     switch(acm.padraoAtual){
         case RAJADA_RAPIDA:
@@ -1265,7 +1265,7 @@ static void ExecutarAtaqueChefe(float modVel){
             }
             else if(acm.estagioAtaque == 1){
                 acm.temporizadorSubAtaque = 1.8f;
-                for(int i=0; i<MAX_LASERS; i++){
+                for(int i=0; i<MAXIMO_PROJETEIS; i++){
                     if(acm.lasers[i].stage == 0){
                         acm.lasers[i].stage = 1; 
                         acm.lasers[i].timer = 0.7f;
@@ -1335,7 +1335,7 @@ static void ExecutarAtaqueChefe(float modVel){
         case VARREDURA_LASER:
             if(acm.temporizadorSubAtaque > 0) return;
             acm.temporizadorSubAtaque = 0.6f;
-            for(int i=0; i<MAX_LASERS; i++){
+            for(int i=0; i<MAXIMO_PROJETEIS; i++){
                 if(acm.lasers[i].stage == 0){
                     float laserX = caixaBatalha.x + (50 * scaleX) + (rand() % ((int)(caixaBatalha.width - (100 * scaleX))));
                     acm.lasers[i].rect = (Rectangle){laserX, caixaBatalha.y, 60 * scaleX, caixaBatalha.height};
@@ -1410,11 +1410,11 @@ static Music CarregarMusicaSegura(const char* nomeArquivo){
 void IniciarFase2(void){
     estadoFase2 = FASE2_GAMEPLAY;
 
-    float currentScreenWidth = (float)GetScreenWidth();
-    float currentScreenHeight = (float)GetScreenHeight();
+    float larguraTelaAtual = (float)GetScreenWidth();
+    float alturaTelaAtual = (float)GetScreenHeight();
 
-    arena.x = (currentScreenWidth - ARENA_WIDTH) / 2;
-    arena.y = (currentScreenHeight - ARENA_HEIGHT) / 2 + 50;
+    arena.x = (larguraTelaAtual - ARENA_WIDTH) / 2;
+    arena.y = (alturaTelaAtual - ARENA_HEIGHT) / 2 + 50;
     arena.width = ARENA_WIDTH;
     arena.height = ARENA_HEIGHT;
 
@@ -1557,8 +1557,8 @@ void AtualizarFase2(void){
 }
 
 void DesenharFase2(void){
-    float currentScreenWidth = (float)GetScreenWidth();
-    float currentScreenHeight = (float)GetScreenHeight();
+    float larguraTelaAtual = (float)GetScreenWidth();
+    float alturaTelaAtual = (float)GetScreenHeight();
 
     BeginDrawing();
     Vector2 shakeOffset = {0};
@@ -1577,7 +1577,7 @@ void DesenharFase2(void){
         // Camada 1 - verde
         DrawTexturePro(texBackgroundStar,
                        (Rectangle){0,0,w,h},
-                       (Rectangle){currentScreenWidth/2, currentScreenHeight/2, w*4, h*4},
+                       (Rectangle){larguraTelaAtual/2, alturaTelaAtual/2, w*4, h*4},
                        (Vector2){w, h},
                        backgroundStarRotation * 0.5f,
                        Fade(GREEN, 0.35f));
@@ -1585,8 +1585,8 @@ void DesenharFase2(void){
         // Camada 2 - rosa
         DrawTexturePro(texBackgroundStar,
                        (Rectangle){0,0,w,h},
-                       (Rectangle){currentScreenWidth/2 + 40*sinf(GetTime()*0.7f),
-                                   currentScreenHeight/2 + 30*cosf(GetTime()*0.9f),
+                       (Rectangle){larguraTelaAtual/2 + 40*sinf(GetTime()*0.7f),
+                                   alturaTelaAtual/2 + 30*cosf(GetTime()*0.9f),
                                    w*3.2f,
                                    h*3.2f},
                        (Vector2){w, h},
@@ -1596,8 +1596,8 @@ void DesenharFase2(void){
         // Camada 3 - azul
         DrawTexturePro(texBackgroundStar,
                        (Rectangle){0,0,w,h},
-                       (Rectangle){currentScreenWidth/2 + 60*cosf(GetTime()*1.3f),
-                                   currentScreenHeight/2 + 50*sinf(GetTime()*1.1f),
+                       (Rectangle){larguraTelaAtual/2 + 60*cosf(GetTime()*1.3f),
+                                   alturaTelaAtual/2 + 50*sinf(GetTime()*1.1f),
                                    w*3.8f,
                                    h*3.8f},
                        (Vector2){w, h},
@@ -1605,8 +1605,8 @@ void DesenharFase2(void){
                        Fade(SKYBLUE, 0.25f));
 
         // Uma camada leve de "scanlines"
-        for(int y = 0; y < (int)currentScreenHeight; y += 4){
-            DrawRectangle(0, y, (int)currentScreenWidth, 1, Fade(BLACK, 0.15f));
+        for(int y = 0; y < (int)alturaTelaAtual; y += 4){
+            DrawRectangle(0, y, (int)larguraTelaAtual, 1, Fade(BLACK, 0.15f));
         }
     }
 
@@ -1640,7 +1640,7 @@ void DesenharFase2(void){
 
             DrawParticles();
             DrawText(TextFormat("HP: %02i", player.hp), 20, 20, 30, WHITE);
-            DrawText("SOBREVIVA!", currentScreenWidth/2 - MeasureText("SOBREVIVA!", 20)/2, 20, 20, YELLOW);
+            DrawText("SOBREVIVA!", larguraTelaAtual/2 - MeasureText("SOBREVIVA!", 20)/2, 20, 20, YELLOW);
 
             const char *attackName = "";
             switch(currentAttack){
@@ -1650,29 +1650,29 @@ void DesenharFase2(void){
                 case HYPER_GONER: attackName = "Hyper Goner"; break;
                 default: break;
             }
-            DrawText(attackName, currentScreenWidth - MeasureText(attackName, 20) - 20, 20, 20, RAYWHITE);
+            DrawText(attackName, larguraTelaAtual - MeasureText(attackName, 20) - 20, 20, 20, RAYWHITE);
         }
         break;
 
         case FASE2_GAME_OVER:
         {
-            DrawText("GAME OVER", currentScreenWidth/2 - MeasureText("GAME OVER", 60)/2, currentScreenHeight/2 - 60, 60, RED);
-            DrawText("Ainda não terminou...", currentScreenWidth/2 - MeasureText("Ainda não terminou...", 20)/2, currentScreenHeight/2 + 20, 20, WHITE);
-            DrawText("[Z] Voltar ao Menu", currentScreenWidth/2 - MeasureText("[Z] Voltar ao Menu", 20)/2, currentScreenHeight - 50, 20, GRAY);
+            DrawText("GAME OVER", larguraTelaAtual/2 - MeasureText("GAME OVER", 60)/2, alturaTelaAtual/2 - 60, 60, RED);
+            DrawText("Ainda não terminou...", larguraTelaAtual/2 - MeasureText("Ainda não terminou...", 20)/2, alturaTelaAtual/2 + 20, 20, WHITE);
+            DrawText("[Z] Voltar ao Menu", larguraTelaAtual/2 - MeasureText("[Z] Voltar ao Menu", 20)/2, alturaTelaAtual - 50, 20, GRAY);
         }
         break;
 
                 case FASE2_VITORIA:
         {
-            DrawText("VITORIA!", currentScreenWidth/2 - MeasureText("VITORIA!", 80)/2, currentScreenHeight/2 - 80, 80, GOLD);
+            DrawText("VITORIA!", larguraTelaAtual/2 - MeasureText("VITORIA!", 80)/2, alturaTelaAtual/2 - 80, 80, GOLD);
             DrawText("Voce foi aprovado na cadeira!",
-                     currentScreenWidth/2 - MeasureText("Voce foi aprovado na cadeira!", 30)/2,
-                     currentScreenHeight/2 + 20,
+                     larguraTelaAtual/2 - MeasureText("Voce foi aprovado na cadeira!", 30)/2,
+                     alturaTelaAtual/2 + 20,
                      30,
                      WHITE);
             DrawText("[Z] Voltar ao Menu",
-                     currentScreenWidth/2 - MeasureText("[Z] Voltar ao Menu", 20)/2,
-                     currentScreenHeight - 50,
+                     larguraTelaAtual/2 - MeasureText("[Z] Voltar ao Menu", 20)/2,
+                     alturaTelaAtual - 50,
                      20,
                      YELLOW);
         }
@@ -1681,7 +1681,7 @@ void DesenharFase2(void){
     }
 
     if(screenFlashTimer > 0){
-        DrawRectangle(0, 0, currentScreenWidth, currentScreenHeight, Fade(WHITE, screenFlashTimer / 0.1f));
+        DrawRectangle(0, 0, larguraTelaAtual, alturaTelaAtual, Fade(WHITE, screenFlashTimer / 0.1f));
     }
 
     EndMode2D();
